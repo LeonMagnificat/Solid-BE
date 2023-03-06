@@ -9,7 +9,6 @@ userRouter.post("/register", async (req, res, next) => {
   const { email, password } = req.body;
 
   try {
-    //user exist?
     const user = await UserModel.findOne({ email });
     //if user exist
     if (user) {
