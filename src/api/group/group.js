@@ -30,10 +30,15 @@ groupRouter.post("/inviteGroup/:groupId", async (req, res, next) => {
     if (!group) {
       return res.status(404).json({ message: "Group not found" });
     }
+    const groupName = group.name;
+    const user = await UserModel.findOne({ email });
+    if (!user) {
+      sendEmail("deeprecords18@gmail.com", groupId, groupName);
+    } else {
+      sendEmail("deeprecords18@gmail.com", groupId, groupName);
+    }
 
-    sendEmail("leonmagnificat@gmail.com");
-
-    res.status(200).json();
+    res.status(200).json({ message: "Email sent" });
   } catch (error) {
     next(error);
   }
