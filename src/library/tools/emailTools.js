@@ -2,12 +2,12 @@ import sgMail from "@sendgrid/mail";
 
 sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 
-export const sendEmail = (to, id, name) => {
+export const sendEmail = (to, link, name) => {
   const msg = {
     to: to,
-    from: "leonmagnificat@gmail.com",
+    from: "solidgroups00@gmail.com",
     subject: "Group invitation",
-    text: `Your id is ${id}`,
+    text: `Your id is ${link}`,
     html: `
     <!DOCTYPE html>
                 <html>
@@ -31,7 +31,7 @@ export const sendEmail = (to, id, name) => {
                           
                           <p>Looking forward to having you as a member!</p>
                           <p>Best regards,</p>
-                          <a href=http://localhost:3000/${id}>
+                          <a href=${link}>
                            <button style="border:none; width: 200px; height: 50px; background-color:#E09B2D; color: white; border-radius: 15px ; cursor:pointer" >Join Group</button>
                            <a/>
                         </td>
@@ -44,8 +44,10 @@ export const sendEmail = (to, id, name) => {
     .send(msg)
     .then(() => {
       console.log("Email sent");
+      console.log(process.env.SENDGRID_API_KEY);
     })
     .catch((error) => {
       console.error(error);
+      console.log(process.env.SENDGRID_API_KEY);
     });
 };

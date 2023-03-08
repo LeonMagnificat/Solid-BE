@@ -57,7 +57,7 @@ userRouter.post("/register/:groupId", async (req, res, next) => {
   const { email, password } = req.body;
 
   try {
-    const user = await UserModel.findOne({ email });
+    const user = await UserModel.findOne({ email: email });
     //if user exist
     if (user) {
       return res.status(400).send({ message: "User already exists" });
@@ -90,7 +90,41 @@ userRouter.post("/register/:groupId", async (req, res, next) => {
     group.members.push(userId);
     await group.save();
 
-    res.status(200).send({ group: group, accessToken });
+    res.status(200).send({ user: newUser, group: group, accessToken });
+  } catch (error) {
+    next(error);
+  }
+});
+
+userRouter.post("/login/:groupId", async (req, res, next) => {
+  const { email, password } = req.body;
+  try {
+    //check if the user exists
+    const user = await UserModel.findOne({ email: email });
+    if (!user) res.status(400).send({ message: "Invalid Email or Password!" });
+
+    // check password
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) res.status(400).send({ message: "Invalid Email or Password!" });
+    const payload = { _id: user._id, role: user.role };
+    const accessToken = await createAccessToken(payload);
+
+    const groupId = req.params.groupId;
+    const userId = user._id;
+    console.log("groupId", groupId, "userId", userId);
+
+    const group = await GroupModel.findById(groupId);
+    if (!group) {
+      return res.status(404).json({ message: "Group not found" });
+    }
+    if (group.members.includes(userId)) {
+      return res.status(400).json({ message: "User is already in group" });
+    }
+
+    group.members.push(userId);
+    await group.save();
+
+    res.status(200).send({ message: "Logged In successfully, and Added to the group", user: user, group: group, accessToken });
   } catch (error) {
     next(error);
   }

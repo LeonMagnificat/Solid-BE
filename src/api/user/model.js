@@ -8,7 +8,7 @@ const userSchema = new Schema(
     lastName: { type: "string", required: true },
     email: { type: "string", required: true },
     password: { type: "string", required: true },
-    role: { type: "string", enum: ["Member", "Admin"], required: true },
+    role: { type: "string", enum: ["Member", "Admin"], default: "Member" },
     contribution: [{ type: Schema.Types.ObjectId, ref: "contribution" }],
   },
 
