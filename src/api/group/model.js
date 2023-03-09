@@ -6,7 +6,7 @@ const groupSchema = new Schema(
   {
     name: { type: "string", required: true },
     currency: { type: "string", enum: ["USD", "EUR"], required: true },
-    members: [{ type: Schema.Types.ObjectId, ref: "user" }],
+    members: [{ type: Schema.Types.ObjectId, ref: "Member" }],
     total: { type: "number", required: true, default: 0, null: false },
     invitation: { type: "string", required: false },
   },

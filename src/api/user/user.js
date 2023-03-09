@@ -90,7 +90,10 @@ userRouter.post("/register/:groupId", async (req, res, next) => {
     group.members.push(userId);
     await group.save();
 
-    res.status(200).send({ user: newUser, group: group, accessToken });
+    newUser.group.push(groupId);
+    await newUser.save();
+
+    res.status(200).send({ user: newUser, accessToken });
   } catch (error) {
     next(error);
   }
@@ -128,6 +131,13 @@ userRouter.post("/login/:groupId", async (req, res, next) => {
   } catch (error) {
     next(error);
   }
+});
+
+userRouter.get("/:userId", async (req, res, next) => {
+  const user = await UserModel.findById(req.params.userId)
+    .populate("group")
+    .populate({ path: "group", populate: { path: "members" } });
+  res.status(200).send(user);
 });
 
 export default userRouter;

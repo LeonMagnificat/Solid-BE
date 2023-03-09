@@ -58,8 +58,15 @@ groupRouter.post("/:groupId/join/:userId", async (req, res, next) => {
       return res.status(400).json({ message: "User is already in group" });
     }
 
+    const user = await UserModel.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
     group.members.push(userId);
     await group.save();
+    user.group.push(groupId);
+    await user.save();
     res.status(200).send(group);
   } catch (error) {
     next(error);

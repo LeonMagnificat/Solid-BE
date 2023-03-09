@@ -10,9 +10,10 @@ const userSchema = new Schema(
     password: { type: "string", required: true },
     role: { type: "string", enum: ["Member", "Admin"], default: "Member" },
     contribution: [{ type: Schema.Types.ObjectId, ref: "contribution" }],
+    group: [{ type: Schema.Types.ObjectId, ref: "Group" }],
   },
 
   { timestamps: true }
 );
 
-export default model("user", userSchema);
+export default model("Member", userSchema);
