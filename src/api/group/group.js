@@ -24,7 +24,8 @@ groupRouter.post("/newGroup", async (req, res, next) => {
 
 groupRouter.post("/inviteGroup/:groupId", async (req, res, next) => {
   const groupId = req.params.groupId;
-  const { email } = req.body;
+  //const { email } = req.body;
+  const email = "deeprecords18@gmail.com";
   try {
     const group = await GroupModel.findById(groupId);
     if (!group) {
@@ -32,12 +33,12 @@ groupRouter.post("/inviteGroup/:groupId", async (req, res, next) => {
     }
     const groupName = group.name;
     const user = await UserModel.findOne({ email });
-    const invitationLinkRegister = `http://localhost:3000/register/${groupId}`;
-    const invitationLinkLogin = `http://localhost:3000/login/${groupId}`;
+    const invitationLinkRegister = `http://localhost:3000/register/${groupId}/${email}`;
+    const invitationLinkLogin = `http://localhost:3000/login/${groupId}/${email}`;
     if (!user) {
-      sendEmail("deeprecords18@gmail.com", invitationLinkRegister, groupName);
+      sendEmail(email, invitationLinkRegister, groupName);
     } else {
-      sendEmail("deeprecords18@gmail.com", invitationLinkLogin, groupName);
+      sendEmail(email, invitationLinkLogin, groupName);
     }
 
     res.status(200).json({ message: "Email sent" });

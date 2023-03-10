@@ -60,7 +60,7 @@ userRouter.post("/register/:groupId", async (req, res, next) => {
     const user = await UserModel.findOne({ email: email });
     //if user exist
     if (user) {
-      return res.status(400).send({ message: "User already exists" });
+      return res.status(400).send({ message: "User already exists, login instead" });
     }
     //if user do not exist, create one
     const newUser = new UserModel(req.body);
