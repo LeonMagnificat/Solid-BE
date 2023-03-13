@@ -127,6 +127,9 @@ userRouter.post("/login/:groupId", async (req, res, next) => {
     group.members.push(userId);
     await group.save();
 
+    user.group.push(groupId);
+    await user.save();
+
     res.status(200).send({ message: "Logged In successfully, and Added to the group", user: user, group: group, accessToken });
   } catch (error) {
     next(error);

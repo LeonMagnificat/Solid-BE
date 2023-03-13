@@ -25,7 +25,7 @@ groupRouter.post("/newGroup", async (req, res, next) => {
 groupRouter.post("/inviteGroup/:groupId", async (req, res, next) => {
   const groupId = req.params.groupId;
   //const { email } = req.body;
-  const email = "deeprecords18@gmail.com";
+  const email = "leonmagnificat@gmail.com";
   try {
     const group = await GroupModel.findById(groupId);
     if (!group) {
