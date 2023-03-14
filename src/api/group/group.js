@@ -15,6 +15,10 @@ groupRouter.post("/newGroup/:userId", async (req, res, next) => {
   newGroup.members.push(userId);
   await newGroup.save();
 
+  if (!user) {
+    return res.status(404).json({ message: "User not found" });
+  }
+
   user.group.push(groupId);
   await user.save();
 
