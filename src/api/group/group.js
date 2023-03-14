@@ -6,15 +6,19 @@ import { sendEmail } from "../../library/tools/emailTools.js";
 
 const groupRouter = express.Router();
 
-groupRouter.post("/newGroup", async (req, res, next) => {
+groupRouter.post("/newGroup/:userId", async (req, res, next) => {
   const newGroup = new GroupModel(req.body);
-  //   const hostURL = req.headers.host;
-  //   const invitationLink = `${hostURL}/${newGroup._id}/join/${shortid.generate()}`;
-  //   newGroup.invitation = invitationLink;
+  const userId = req.params.userId;
+  const groupId = newGroup._id;
+  const user = await UserModel.findById(userId);
 
+  newGroup.members.push(userId);
   await newGroup.save();
 
-  res.status(200).send(newGroup);
+  user.group.push(groupId);
+  await user.save();
+
+  res.status(200).send({ newGroup, user });
 
   try {
   } catch (error) {
@@ -24,8 +28,8 @@ groupRouter.post("/newGroup", async (req, res, next) => {
 
 groupRouter.post("/inviteGroup/:groupId", async (req, res, next) => {
   const groupId = req.params.groupId;
-  //const { email } = req.body;
-  const email = "leonmagnificat@gmail.com";
+  const { email } = req.body;
+  //const email = "leonmagnificat@gmail.com";
   try {
     const group = await GroupModel.findById(groupId);
     if (!group) {
