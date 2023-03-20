@@ -9,7 +9,7 @@ const userSchema = new Schema(
     email: { type: "string", required: true },
     password: { type: "string", required: true },
     role: { type: "string", enum: ["Member", "Admin"], default: "Member" },
-    contribution: [{ type: Schema.Types.ObjectId, ref: "contribution" }],
+    total: { type: "number", required: true, default: 0, null: false },
     group: [{ type: Schema.Types.ObjectId, ref: "Group" }],
   },
 

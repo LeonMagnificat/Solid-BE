@@ -3,6 +3,8 @@ import listEndpoints from "express-list-endpoints";
 import cors from "cors";
 import userRouter from "./api/user/user.js";
 import groupRouter from "./api/group/group.js";
+import taskRouter from "./api/tasks/task.js";
+import contributionRouter from "./api/contribution/contribution.js";
 import { badRequestHandler, unauthorizedHandler, notFoundHandler, genericHandler } from "./errorHandler.js";
 import mongoose from "mongoose";
 
@@ -14,6 +16,8 @@ server.use(cors());
 
 server.use("/user", userRouter);
 server.use("/group", groupRouter);
+server.use("/contribution", contributionRouter);
+server.use("/task", taskRouter);
 
 server.use(badRequestHandler);
 server.use(unauthorizedHandler);
