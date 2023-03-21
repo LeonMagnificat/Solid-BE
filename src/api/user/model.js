@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import bcrypt from "bcrypt";
 
 const { Schema, model } = mongoose;
 
@@ -15,5 +16,39 @@ const userSchema = new Schema(
 
   { timestamps: true }
 );
+
+userSchema.pre("save", async function (next) {
+  const currentUser = this;
+  if (currentUser.isModified("password")) {
+    const plainPW = currentUser.password;
+    const hashedPW = await bcrypt.hash(plainPW, 10);
+    currentUser.password = hashedPW;
+  }
+  return next();
+});
+
+userSchema.methods.toJSON = function () {
+  const userDocument = this;
+  const userObject = userDocument.toObject();
+  delete userObject.password;
+  delete userObject.createdAt;
+  delete userObject.updatedAt;
+  delete userObject.__v;
+  return userObject;
+};
+
+userSchema.static("checkCredentials", async function (email, password) {
+  const user = await this.findOne({ email });
+  if (user) {
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (isMatch) {
+      return user;
+    } else {
+      return null;
+    }
+  } else {
+    return null;
+  }
+});
 
 export default model("Member", userSchema);
