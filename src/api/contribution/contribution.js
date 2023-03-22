@@ -56,4 +56,29 @@ contributionRouter.get("/:groupId/:userId", async (req, res, next) => {
   }
 });
 
+contributionRouter.put("/:contributionId", async (req, res, next) => {
+  const contributionId = req.params.contributionId;
+
+  const updatedContribution = await ContributionModel.findByIdAndUpdate(contributionId, { amount: req.body.amount }, { new: true });
+
+  if (!updatedContribution) {
+    res.status(404).json({ message: "Contribution not found" });
+    return;
+  }
+
+  res.status(200).json(updatedContribution);
+});
+
+contributionRouter.delete("/:contributionId", async (req, res, next) => {
+  const contributionId = req.params.contributionId;
+
+  const deletedContribution = await ContributionModel.findByIdAndRemove(contributionId);
+
+  if (!deletedContribution) {
+    res.status(404).json({ message: "Contribution not found" });
+    return;
+  }
+  res.status(204).send({ message: "Contribution Deleted" });
+});
+
 export default contributionRouter;

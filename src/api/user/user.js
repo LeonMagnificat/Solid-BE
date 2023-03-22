@@ -15,14 +15,14 @@ userRouter.post("/register", async (req, res, next) => {
     const user = await UserModel.findOne({ email });
     //if user exist
     if (user) {
-      return res.status(400).send({ message: "User already exists" });
+      return res.status(400).send({ message: "User already exists, Login instead" });
     }
     //if user do not exist, create one
     const newUser = new UserModel(req.body);
 
     //Hash password before saving it
-    const hashedPassword = await bcrypt.hash(password, 11);
-    newUser.password = hashedPassword;
+    // const hashedPassword = await bcrypt.hash(password, 11);
+    // newUser.password = hashedPassword;
     await newUser.save();
 
     //create token
@@ -145,7 +145,7 @@ userRouter.post("/login/:groupId", async (req, res, next) => {
   }
 });
 
-userRouter.get("/:userId", async (req, res, next) => {
+userRouter.get("/:userId", JWTAuthMiddleware, async (req, res, next) => {
   const user = await UserModel.findById(req.params.userId)
     .populate("group")
     .populate({ path: "group", populate: { path: "members" } });

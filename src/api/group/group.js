@@ -4,14 +4,20 @@ import UserModel from "../user/model.js";
 import { sendEmail } from "../../library/tools/emailTools.js";
 import { createAccessToken } from "../../library/Auth/tokenTools.js";
 import jwt from "jsonwebtoken";
+import { JWTAuthMiddleware } from "../../library/JWTMiddleware/jwtAuth.js";
 
 const groupRouter = express.Router();
 
-groupRouter.post("/newGroup/:userId", async (req, res, next) => {
+groupRouter.post("/newGroup/:userId", JWTAuthMiddleware, async (req, res, next) => {
   const newGroup = new GroupModel(req.body);
   const userId = req.params.userId;
   const groupId = newGroup._id;
   const user = await UserModel.findById(userId);
+
+  const existingGroup = await GroupModel.findOne({ name: newGroup.name });
+  if (existingGroup) {
+    return res.status(400).json({ message: "Group name already exists, please choose another name" });
+  }
 
   newGroup.members.push(userId);
   await newGroup.save();
@@ -20,11 +26,11 @@ groupRouter.post("/newGroup/:userId", async (req, res, next) => {
     return res.status(404).json({ message: "User not found" });
   }
 
-  user.group.push(groupId);
+  user.group.unshift(groupId);
   user.role = "Admin";
   await user.save();
 
-  res.status(200).send({ newGroup, user });
+  res.status(200).send({ newGroup });
 
   try {
   } catch (error) {
