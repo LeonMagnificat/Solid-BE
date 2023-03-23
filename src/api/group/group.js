@@ -12,25 +12,31 @@ groupRouter.post("/newGroup/:userId", JWTAuthMiddleware, async (req, res, next) 
   const newGroup = new GroupModel(req.body);
   const userId = req.params.userId;
   const groupId = newGroup._id;
-  const user = await UserModel.findById(userId);
 
-  const existingGroup = await GroupModel.findOne({ name: newGroup.name });
+  const existingGroup = await GroupModel.findOne({ name: newGroup.name, members: userId });
   if (existingGroup) {
     return res.status(400).json({ message: "Group name already exists, please choose another name" });
   }
-
   newGroup.members.push(userId);
   await newGroup.save();
+
+  const user = await UserModel.findById(userId)
+    .populate("group")
+    .populate({ path: "group", populate: { path: "members" } });
 
   if (!user) {
     return res.status(404).json({ message: "User not found" });
   }
+  if (user.role !== "Admin") {
+    user.role = "Admin";
+    await user.save();
+  }
 
-  user.group.unshift(groupId);
-  user.role = "Admin";
-  await user.save();
+  const updatedUser = await UserModel.findByIdAndUpdate(userId, { $push: { group: groupId } }, { new: true, runValidators: true })
+    .populate("group")
+    .populate({ path: "group", populate: { path: "members" } });
 
-  res.status(200).send({ newGroup });
+  res.status(200).send(updatedUser);
 
   try {
   } catch (error) {
@@ -93,27 +99,41 @@ groupRouter.post("/:groupId/join/:userId", async (req, res, next) => {
   }
 });
 
-groupRouter.put("/:groupId", async (req, res, next) => {
+groupRouter.put("/:groupId", JWTAuthMiddleware, async (req, res, next) => {
   try {
     const groupId = req.params.groupId;
+    const userId = req.user._id;
     const group = await GroupModel.findByIdAndUpdate(groupId, req.body, { new: true, runValidators: true });
     if (!group) {
       return res.status(404).json({ message: "Group not found" });
     }
-    res.status(200).send(group);
+
+    const user = await UserModel.findById(userId)
+      .populate("group")
+      .populate({ path: "group", populate: { path: "members" } });
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+    res.status(200).send(user);
   } catch (error) {
     next(error);
   }
 });
-groupRouter.delete("/:groupId", async (req, res, next) => {
+groupRouter.delete("/:groupId", JWTAuthMiddleware, async (req, res, next) => {
   try {
     const groupId = req.params.groupId;
+    const userId = req.user._id;
     const group = await GroupModel.findByIdAndDelete(groupId);
     const result = await UserModel.updateMany({ group: groupId }, { $pull: { group: groupId } });
 
-    console.log(`Modified ${result.nModified} user(s)`);
+    const user = await UserModel.findById(userId)
+      .populate("group")
+      .populate({ path: "group", populate: { path: "members" } });
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
 
-    res.status(200).send({ message: "Group deleted" });
+    res.status(200).send({ user, message: "Group successfully deleted" });
   } catch (error) {
     next(error);
   }
