@@ -5,6 +5,7 @@ import bcrypt from "bcrypt";
 import { createAccessToken } from "../../library/Auth/tokenTools.js";
 import { basicAuthMiddleware } from "../../library/JWTMiddleware/basicAuth.js";
 import { JWTAuthMiddleware } from "../../library/JWTMiddleware/jwtAuth.js";
+import { adminOnlyMiddleware } from "../../library/JWTMiddleware/adminAuth.js";
 
 const userRouter = express.Router();
 
@@ -75,8 +76,8 @@ userRouter.post("/register/:groupId", async (req, res, next) => {
     const newUser = new UserModel(req.body);
 
     //Hash password before saving it
-    const hashedPassword = await bcrypt.hash(password, 11);
-    newUser.password = hashedPassword;
+    // const hashedPassword = await bcrypt.hash(password, 11);
+    // newUser.password = hashedPassword;
     await newUser.save();
 
     //create token
@@ -152,7 +153,7 @@ userRouter.get("/:userId", JWTAuthMiddleware, async (req, res, next) => {
   res.status(200).send(user);
 });
 
-userRouter.delete("/deleteMember/:groupId/:userId", async (req, res, next) => {
+userRouter.delete("/deleteMember/:groupId/:userId", JWTAuthMiddleware, adminOnlyMiddleware, async (req, res, next) => {
   const groupId = req.params.groupId;
   const userId = req.params.userId;
   try {
@@ -165,13 +166,21 @@ userRouter.delete("/deleteMember/:groupId/:userId", async (req, res, next) => {
     await group.save();
 
     const user = await UserModel.findById(userId);
+
     if (!user) {
       return res.status(404).json({ message: "User not found" });
+    }
+    if (user.role === "Admin") {
+      return res.status(404).json({ message: "Can not remove Admin" });
     }
     user.group = user.group.filter((group) => group.toString() !== groupId);
     await UserModel.findByIdAndUpdate({ _id: userId }, { $set: { group: user.group } });
     await user.save();
-    res.status(200).send({ message: "User deleted successfully" });
+
+    const currentUser = await UserModel.findById(req.user._id)
+      .populate("group")
+      .populate({ path: "group", populate: { path: "members" } });
+    res.status(200).send({ currentUser, message: "User deleted successfully" });
   } catch {
     next(error);
   }
