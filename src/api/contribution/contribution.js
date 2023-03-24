@@ -6,24 +6,51 @@ import ContributionModel from "../contribution/model.js";
 const contributionRouter = express.Router();
 
 contributionRouter.post("/:groupId/:userId", async (req, res, next) => {
-  const groupId = req.params.groupId;
-  const userId = req.params.userId;
+  try {
+    const groupId = req.params.groupId;
+    const userId = req.params.userId;
 
-  const member = await UserModel.findById(userId);
-  const group = await GroupModel.findById(groupId);
+    const member = await UserModel.findById(userId)
+      .populate("group")
+      .populate({ path: "group", populate: [{ path: "members" }, { path: "contribution" }] })
+      .populate({ path: "contributions" });
+    const group = await GroupModel.findById(groupId).populate({ path: "contribution" });
 
-  if (!member || !group) {
-    res.status(404).json({ message: "User or group not found" });
-    return;
+    if (!member || !group) {
+      res.status(404).json({ message: "User or group not found" });
+      return;
+    }
+    if (!group.members.includes(userId)) {
+      res.status(403).json({ message: "User is not a member of this group" });
+      return;
+    }
+
+    const newContribution = new ContributionModel({ user: userId, group: groupId, amount: req.body.amount });
+    await newContribution.save();
+
+    member.contributions.push(newContribution);
+    await member.save();
+
+    group.contribution.push(newContribution);
+    await group.save();
+
+    const userContributions = await ContributionModel.find({ user: userId });
+    const userTotal = userContributions.reduce((acc, curr) => acc + curr.amount, 0);
+    member.total = userTotal;
+    await member.save();
+
+    const groupContributions = await ContributionModel.find({ group: groupId }).populate({ path: "group" }).populate({ path: "user" });
+    const groupTotal = groupContributions.reduce((acc, curr) => acc + curr.amount, 0);
+    group.total = groupTotal;
+    await group.save();
+
+    const contributions = member.contributions;
+    const groupContribution = group.contribution;
+
+    res.status(201).json(member);
+  } catch (error) {
+    next(error);
   }
-  if (!group.members.includes(userId)) {
-    res.status(403).json({ message: "User is not a member of this group" });
-    return;
-  }
-
-  const newContribution = new ContributionModel({ user: userId, group: groupId, amount: req.body.amount });
-  await newContribution.save();
-  res.status(201).json(newContribution);
 });
 
 contributionRouter.get("/:groupId", async (req, res, next) => {

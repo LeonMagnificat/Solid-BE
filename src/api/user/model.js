@@ -12,6 +12,7 @@ const userSchema = new Schema(
     role: { type: "string", enum: ["Member", "Admin"], default: "Member" },
     total: { type: "number", required: true, default: 0, null: false },
     group: [{ type: Schema.Types.ObjectId, ref: "Group" }],
+    contributions: [{ type: Schema.Types.ObjectId, ref: "Contribution" }],
   },
 
   { timestamps: true }
@@ -31,8 +32,6 @@ userSchema.methods.toJSON = function () {
   const userDocument = this;
   const userObject = userDocument.toObject();
   delete userObject.password;
-  delete userObject.createdAt;
-  delete userObject.updatedAt;
   delete userObject.__v;
   return userObject;
 };
