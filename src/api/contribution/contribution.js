@@ -2,19 +2,20 @@ import express from "express";
 import UserModel from "../user/model.js";
 import GroupModel from "../group/model.js";
 import ContributionModel from "../contribution/model.js";
+import { JWTAuthMiddleware } from "../../library/JWTMiddleware/jwtAuth.js";
 
 const contributionRouter = express.Router();
 
-contributionRouter.post("/:groupId/:userId", async (req, res, next) => {
+contributionRouter.post("/:groupId/:userId", JWTAuthMiddleware, async (req, res, next) => {
   try {
     const groupId = req.params.groupId;
     const userId = req.params.userId;
 
     const member = await UserModel.findById(userId)
       .populate("group")
-      .populate({ path: "group", populate: [{ path: "members" }, { path: "contribution" }] })
+      .populate({ path: "group", populate: [{ path: "members" }] })
       .populate({ path: "contributions" });
-    const group = await GroupModel.findById(groupId).populate({ path: "contribution" });
+    const group = await GroupModel.findById(groupId);
 
     if (!member || !group) {
       res.status(404).json({ message: "User or group not found" });
@@ -28,11 +29,11 @@ contributionRouter.post("/:groupId/:userId", async (req, res, next) => {
     const newContribution = new ContributionModel({ user: userId, group: groupId, amount: req.body.amount });
     await newContribution.save();
 
-    member.contributions.push(newContribution);
-    await member.save();
+    // member.contributions.push(newContribution);
+    // await member.save();
 
-    group.contribution.push(newContribution);
-    await group.save();
+    // group.contribution.push(newContribution);
+    // await group.save();
 
     const userContributions = await ContributionModel.find({ user: userId });
     const userTotal = userContributions.reduce((acc, curr) => acc + curr.amount, 0);
@@ -44,10 +45,17 @@ contributionRouter.post("/:groupId/:userId", async (req, res, next) => {
     group.total = groupTotal;
     await group.save();
 
-    const contributions = member.contributions;
-    const groupContribution = group.contribution;
+    const updatedMember = await UserModel.findByIdAndUpdate(userId, { $push: { contributions: newContribution } }, { new: true, runValidators: true })
+      .populate("group")
+      .populate({ path: "group", populate: [{ path: "members" }] })
+      .populate({ path: "contributions" });
 
-    res.status(201).json(member);
+    // const contributionInGroup = await ContributionModel.find({ user: userId, group: groupId });
+
+    // const contributions = member.contributions.filter((contribution) => contribution.group.toString() === groupId); // filter only contributions in the group
+    // const groupContribution = group.contribution;
+
+    res.status(201).json(updatedMember);
   } catch (error) {
     next(error);
   }

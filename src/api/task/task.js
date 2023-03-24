@@ -3,10 +3,11 @@ import UserModel from "../user/model.js";
 import GroupModel from "../group/model.js";
 import ContributionModel from "../contribution/model.js";
 import TaskModel from "./model.js";
+import { JWTAuthMiddleware } from "../../library/JWTMiddleware/jwtAuth.js";
 
 const taskRouter = express.Router();
 
-taskRouter.post("/:groupId", async (req, res, next) => {
+taskRouter.post("/:groupId", JWTAuthMiddleware, async (req, res, next) => {
   const groupId = req.params.groupId;
   const group = await GroupModel.findById(groupId);
   if (!group) {
@@ -14,7 +15,21 @@ taskRouter.post("/:groupId", async (req, res, next) => {
   }
   const task = new TaskModel({ title: req.body.title, group: groupId });
   await task.save();
-  return res.status(201).json(task);
+
+  //const updatedGroup = await GroupModel.findByIdAndUpdate(groupId, { $push: { tasks: task } }, { new: true, runValidators: true }).populate("tasks");
+  group.tasks.push(task);
+  await group.save();
+
+  const user = await UserModel.findById(req.user._id)
+    .populate("group")
+    .populate({ path: "group", populate: [{ path: "members" }, { path: "tasks" }] })
+    .populate({ path: "contributions" });
+  if (!user) {
+    return res.status(404).json({ message: "User not found" });
+  }
+  //user.group = updatedGroup;
+
+  return res.status(201).json(user);
 });
 
 taskRouter.get("/:groupId", async (req, res, next) => {
