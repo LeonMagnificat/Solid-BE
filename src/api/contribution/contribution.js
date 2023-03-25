@@ -13,7 +13,7 @@ contributionRouter.post("/:groupId/:userId", JWTAuthMiddleware, async (req, res,
 
     const member = await UserModel.findById(userId)
       .populate("group")
-      .populate({ path: "group", populate: [{ path: "members" }] })
+      .populate({ path: "group", populate: [{ path: "members", populate: [{ path: "contributions" }] }], populate: [{ path: "tasks" }] })
       .populate({ path: "contributions" });
     const group = await GroupModel.findById(groupId);
 
@@ -47,7 +47,7 @@ contributionRouter.post("/:groupId/:userId", JWTAuthMiddleware, async (req, res,
 
     const updatedMember = await UserModel.findByIdAndUpdate(userId, { $push: { contributions: newContribution } }, { new: true, runValidators: true })
       .populate("group")
-      .populate({ path: "group", populate: [{ path: "members" }] })
+      .populate({ path: "group", populate: [{ path: "members", populate: [{ path: "contributions" }] }, { path: "tasks" }] })
       .populate({ path: "contributions" });
 
     // const contributionInGroup = await ContributionModel.find({ user: userId, group: groupId });

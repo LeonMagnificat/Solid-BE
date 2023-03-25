@@ -22,7 +22,7 @@ taskRouter.post("/:groupId", JWTAuthMiddleware, async (req, res, next) => {
 
   const user = await UserModel.findById(req.user._id)
     .populate("group")
-    .populate({ path: "group", populate: [{ path: "members" }, { path: "tasks" }] })
+    .populate({ path: "group", populate: [{ path: "members", populate: [{ path: "contributions" }] }, { path: "tasks" }] })
     .populate({ path: "contributions" });
   if (!user) {
     return res.status(404).json({ message: "User not found" });
@@ -42,26 +42,44 @@ taskRouter.get("/:groupId", async (req, res, next) => {
   return res.status(200).json(tasks);
 });
 
-taskRouter.put("/:taskId", async (req, res, next) => {
+taskRouter.put("/:taskId", JWTAuthMiddleware, async (req, res, next) => {
   try {
     const taskId = req.params.taskId;
     const task = await TaskModel.findByIdAndUpdate(taskId, req.body, { new: true, runValidators: true });
     if (!task) {
       return res.status(404).json({ message: "Task not found" });
     }
-    return res.status(200).json(task);
+
+    const user = await UserModel.findById(req.user._id)
+      .populate("group")
+      .populate({ path: "group", populate: [{ path: "members", populate: [{ path: "contributions" }] }, { path: "tasks" }] })
+      .populate({ path: "contributions" });
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    return res.status(201).json(user);
   } catch (error) {
     next(error);
   }
 });
-taskRouter.delete("/:taskId", async (req, res, next) => {
+taskRouter.delete("/:taskId", JWTAuthMiddleware, async (req, res, next) => {
   try {
     const taskId = req.params.taskId;
     const task = await TaskModel.findByIdAndDelete(taskId);
     if (!task) {
       return res.status(404).json({ message: "Task not found" });
     }
-    return res.status(200).json("task deleted");
+
+    const user = await UserModel.findById(req.user._id)
+      .populate("group")
+      .populate({ path: "group", populate: [{ path: "members", populate: [{ path: "contributions" }] }, { path: "tasks" }] })
+      .populate({ path: "contributions" });
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    return res.status(201).json(user);
   } catch (error) {
     next(error);
   }

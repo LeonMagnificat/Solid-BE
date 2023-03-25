@@ -42,9 +42,9 @@ userRouter.post("/login", async (req, res, next) => {
     const { email, password } = req.body;
     //check if the user exists
     const user = await UserModel.findOne({ email: email })
-      .populate("contributions")
       .populate("group")
-      .populate({ path: "group", populate: [{ path: "members" }, { path: "contribution" }] });
+      .populate({ path: "group", populate: [{ path: "members", populate: [{ path: "contributions" }] }, { path: "tasks" }] })
+      .populate({ path: "contributions" });
     if (!user) res.status(400).send({ message: "Invalid Email or Password!" });
 
     // check password
@@ -151,9 +151,9 @@ userRouter.post("/login/:groupId", async (req, res, next) => {
 
 userRouter.get("/:userId", JWTAuthMiddleware, async (req, res, next) => {
   const user = await UserModel.findById(req.params.userId)
-    .populate("contributions")
     .populate("group")
-    .populate({ path: "group", populate: [{ path: "members", populate: [{ path: "contributions" }] }, { path: "contribution" }] });
+    .populate({ path: "group", populate: [{ path: "members", populate: [{ path: "contributions" }] }, { path: "tasks" }] })
+    .populate({ path: "contributions" });
   res.status(200).send(user);
 });
 
