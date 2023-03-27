@@ -51,10 +51,11 @@ groupRouter.post("/inviteGroup/:groupId", async (req, res, next) => {
     if (!group) {
       return res.status(404).send({ message: "Group not found" });
     }
+    const frontEndUrl = process.env.FE_PROD_URL;
     const groupName = group.name;
     const user = await UserModel.findOne({ email });
-    const invitationLinkRegister = `http://localhost:3000/register/${groupId}/${email}`;
-    const invitationLinkLogin = `http://localhost:3000/login/${groupId}/${email}`;
+    const invitationLinkRegister = `${frontEndUrl}/register/${groupId}/${email}`;
+    const invitationLinkLogin = `${frontEndUrl}/login/${groupId}/${email}`;
 
     const payload = { email };
 
