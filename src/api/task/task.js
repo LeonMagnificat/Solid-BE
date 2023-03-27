@@ -8,38 +8,44 @@ import { JWTAuthMiddleware } from "../../library/JWTMiddleware/jwtAuth.js";
 const taskRouter = express.Router();
 
 taskRouter.post("/:groupId", JWTAuthMiddleware, async (req, res, next) => {
-  const groupId = req.params.groupId;
-  const group = await GroupModel.findById(groupId);
-  if (!group) {
-    return res.status(404).json({ message: "Group not found" });
+  try {
+    const groupId = req.params.groupId;
+    const group = await GroupModel.findById(groupId);
+    if (!group) {
+      return res.status(404).json({ message: "Group not found" });
+    }
+    const task = new TaskModel({ title: req.body.title, group: groupId });
+    await task.save();
+
+    group.tasks.push(task);
+    await group.save();
+
+    const user = await UserModel.findById(req.user._id)
+      .populate("group")
+      .populate({ path: "group", populate: [{ path: "members", populate: [{ path: "contributions" }] }, { path: "tasks" }] })
+      .populate({ path: "contributions" });
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    return res.status(201).json(user);
+  } catch (error) {
+    next(error);
   }
-  const task = new TaskModel({ title: req.body.title, group: groupId });
-  await task.save();
-
-  //const updatedGroup = await GroupModel.findByIdAndUpdate(groupId, { $push: { tasks: task } }, { new: true, runValidators: true }).populate("tasks");
-  group.tasks.push(task);
-  await group.save();
-
-  const user = await UserModel.findById(req.user._id)
-    .populate("group")
-    .populate({ path: "group", populate: [{ path: "members", populate: [{ path: "contributions" }] }, { path: "tasks" }] })
-    .populate({ path: "contributions" });
-  if (!user) {
-    return res.status(404).json({ message: "User not found" });
-  }
-  //user.group = updatedGroup;
-
-  return res.status(201).json(user);
 });
 
 taskRouter.get("/:groupId", async (req, res, next) => {
-  const groupId = req.params.groupId;
-  const group = await GroupModel.findById(groupId);
-  if (!group) {
-    return res.status(404).json({ message: "Group not found" });
+  try {
+    const groupId = req.params.groupId;
+    const group = await GroupModel.findById(groupId);
+    if (!group) {
+      return res.status(404).json({ message: "Group not found" });
+    }
+    const tasks = await TaskModel.find({ group: groupId });
+    return res.status(200).json(tasks);
+  } catch (error) {
+    next(error);
   }
-  const tasks = await TaskModel.find({ group: groupId });
-  return res.status(200).json(tasks);
 });
 
 taskRouter.put("/:taskId", JWTAuthMiddleware, async (req, res, next) => {

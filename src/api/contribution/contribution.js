@@ -29,12 +29,6 @@ contributionRouter.post("/:groupId/:userId", JWTAuthMiddleware, async (req, res,
     const newContribution = new ContributionModel({ user: userId, group: groupId, amount: req.body.amount });
     await newContribution.save();
 
-    // member.contributions.push(newContribution);
-    // await member.save();
-
-    // group.contribution.push(newContribution);
-    // await group.save();
-
     const userContributions = await ContributionModel.find({ user: userId });
     const userTotal = userContributions.reduce((acc, curr) => acc + curr.amount, 0);
     member.total = userTotal;
@@ -50,11 +44,6 @@ contributionRouter.post("/:groupId/:userId", JWTAuthMiddleware, async (req, res,
       .populate({ path: "group", populate: [{ path: "members", populate: [{ path: "contributions" }] }, { path: "tasks" }] })
       .populate({ path: "contributions" });
 
-    // const contributionInGroup = await ContributionModel.find({ user: userId, group: groupId });
-
-    // const contributions = member.contributions.filter((contribution) => contribution.group.toString() === groupId); // filter only contributions in the group
-    // const groupContribution = group.contribution;
-
     res.status(201).json(updatedMember);
   } catch (error) {
     next(error);
@@ -62,22 +51,26 @@ contributionRouter.post("/:groupId/:userId", JWTAuthMiddleware, async (req, res,
 });
 
 contributionRouter.get("/:groupId", async (req, res, next) => {
-  const groupId = req.params.groupId;
-  const contributions = await ContributionModel.find({ group: groupId });
-  if (contributions.length !== 0) {
-    const sum = contributions.reduce((acc, curr) => acc + curr.amount, 0);
-    const group = await GroupModel.findById(groupId);
-    group.total = sum;
-    await group.save();
-    res.send({ contributions, group });
+  try {
+    const groupId = req.params.groupId;
+    const contributions = await ContributionModel.find({ group: groupId });
+    if (contributions.length !== 0) {
+      const sum = contributions.reduce((acc, curr) => acc + curr.amount, 0);
+      const group = await GroupModel.findById(groupId);
+      group.total = sum;
+      await group.save();
+      res.send({ contributions, group });
+    }
+  } catch (error) {
+    next(error);
+    res.status(500).send(error);
   }
 });
 
 contributionRouter.get("/:groupId/:userId", async (req, res, next) => {
-  const groupId = req.params.groupId;
-  const userId = req.params.userId;
-
   try {
+    const groupId = req.params.groupId;
+    const userId = req.params.userId;
     const contributions = await ContributionModel.find({ user: userId, group: groupId });
     if (contributions.length !== 0) {
       const sum = contributions.reduce((acc, curr) => acc + curr.amount, 0);
@@ -87,33 +80,44 @@ contributionRouter.get("/:groupId/:userId", async (req, res, next) => {
       res.send({ contributions, user });
     }
   } catch (error) {
+    next(error);
     res.status(500).send(error);
   }
 });
 
 contributionRouter.put("/:contributionId", async (req, res, next) => {
-  const contributionId = req.params.contributionId;
+  try {
+    const contributionId = req.params.contributionId;
 
-  const updatedContribution = await ContributionModel.findByIdAndUpdate(contributionId, { amount: req.body.amount }, { new: true });
+    const updatedContribution = await ContributionModel.findByIdAndUpdate(contributionId, { amount: req.body.amount }, { new: true });
 
-  if (!updatedContribution) {
-    res.status(404).json({ message: "Contribution not found" });
-    return;
+    if (!updatedContribution) {
+      res.status(404).json({ message: "Contribution not found" });
+      return;
+    }
+
+    res.status(200).json(updatedContribution);
+  } catch (error) {
+    next(error);
+    res.status(500).send(error);
   }
-
-  res.status(200).json(updatedContribution);
 });
 
 contributionRouter.delete("/:contributionId", async (req, res, next) => {
-  const contributionId = req.params.contributionId;
+  try {
+    const contributionId = req.params.contributionId;
 
-  const deletedContribution = await ContributionModel.findByIdAndRemove(contributionId);
+    const deletedContribution = await ContributionModel.findByIdAndRemove(contributionId);
 
-  if (!deletedContribution) {
-    res.status(404).json({ message: "Contribution not found" });
-    return;
+    if (!deletedContribution) {
+      res.status(404).json({ message: "Contribution not found" });
+      return;
+    }
+    res.status(204).send({ message: "Contribution Deleted" });
+  } catch (error) {
+    next(error);
+    res.status(500).send(error);
   }
-  res.status(204).send({ message: "Contribution Deleted" });
 });
 
 export default contributionRouter;

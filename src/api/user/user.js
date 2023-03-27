@@ -10,20 +10,15 @@ import { adminOnlyMiddleware } from "../../library/JWTMiddleware/adminAuth.js";
 const userRouter = express.Router();
 
 userRouter.post("/register", async (req, res, next) => {
-  const { email, password } = req.body;
-
   try {
+    const { email, password } = req.body;
     const user = await UserModel.findOne({ email });
-    //if user exist
+
     if (user) {
       return res.status(400).send({ message: "User already exists, Login instead" });
     }
     //if user do not exist, create one
     const newUser = new UserModel(req.body);
-
-    //Hash password before saving it
-    // const hashedPassword = await bcrypt.hash(password, 11);
-    // newUser.password = hashedPassword;
     await newUser.save();
 
     //create token
@@ -58,18 +53,14 @@ userRouter.post("/login", async (req, res, next) => {
     } else {
       res.status(400).send({ message: "Invalid Email or Password!" });
     }
-    // const isMatch = await bcrypt.compare(password, user.password);
-    // if (!isMatch) res.status(400).send({ message: "Invalid Email or Password!" });
-    // const accessToken = await createAccessToken(payload);
   } catch (error) {
     next(error);
   }
 });
 
 userRouter.post("/register/:groupId", async (req, res, next) => {
-  const { email, password } = req.body;
-
   try {
+    const { email, password } = req.body;
     const user = await UserModel.findOne({ email: email });
     //if user exist
     if (user) {
@@ -78,9 +69,6 @@ userRouter.post("/register/:groupId", async (req, res, next) => {
     //if user do not exist, create one
     const newUser = new UserModel(req.body);
 
-    //Hash password before saving it
-    // const hashedPassword = await bcrypt.hash(password, 11);
-    // newUser.password = hashedPassword;
     await newUser.save();
 
     //create token
@@ -113,8 +101,8 @@ userRouter.post("/register/:groupId", async (req, res, next) => {
 });
 
 userRouter.post("/login/:groupId", async (req, res, next) => {
-  const { email, password } = req.body;
   try {
+    const { email, password } = req.body;
     //check if the user exists
     const user = await UserModel.findOne({ email: email });
     if (!user) res.status(400).send({ message: "Invalid Email or Password!" });
@@ -150,17 +138,21 @@ userRouter.post("/login/:groupId", async (req, res, next) => {
 });
 
 userRouter.get("/:userId", JWTAuthMiddleware, async (req, res, next) => {
-  const user = await UserModel.findById(req.params.userId)
-    .populate("group")
-    .populate({ path: "group", populate: [{ path: "members", populate: [{ path: "contributions" }] }, { path: "tasks" }] })
-    .populate({ path: "contributions" });
-  res.status(200).send(user);
+  try {
+    const user = await UserModel.findById(req.user._id)
+      .populate("group")
+      .populate({ path: "group", populate: [{ path: "members", populate: [{ path: "contributions" }] }, { path: "tasks" }] })
+      .populate({ path: "contributions" });
+    res.status(200).send(user);
+  } catch (error) {
+    next(error);
+  }
 });
 
 userRouter.delete("/deleteMember/:groupId/:userId", JWTAuthMiddleware, adminOnlyMiddleware, async (req, res, next) => {
-  const groupId = req.params.groupId;
-  const userId = req.params.userId;
   try {
+    const groupId = req.params.groupId;
+    const userId = req.params.userId;
     const group = await GroupModel.findById(groupId);
     if (!group) {
       return res.status(404).json({ message: "Group not found" });
