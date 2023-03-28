@@ -9,6 +9,7 @@ const groupSchema = new Schema(
     members: [{ type: Schema.Types.ObjectId, ref: "Member" }],
     contribution: [{ type: Schema.Types.ObjectId, ref: "Contribution" }],
     tasks: [{ type: Schema.Types.ObjectId, ref: "Task" }],
+    admins: [{ type: Schema.Types.ObjectId, ref: "Member" }],
     total: { type: "number", required: true, default: 0, null: false },
   },
 
