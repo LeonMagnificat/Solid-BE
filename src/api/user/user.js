@@ -149,13 +149,19 @@ userRouter.get("/:userId", JWTAuthMiddleware, async (req, res, next) => {
   }
 });
 
-userRouter.delete("/deleteMember/:groupId/:userId", JWTAuthMiddleware, adminOnlyMiddleware, async (req, res, next) => {
+userRouter.delete("/deleteMember/:groupId/:userId", JWTAuthMiddleware, async (req, res, next) => {
   try {
     const groupId = req.params.groupId;
     const userId = req.params.userId;
     const group = await GroupModel.findById(groupId);
     if (!group) {
       return res.status(404).json({ message: "Group not found" });
+    }
+    if (group.members.length === 1) {
+      return res.status(404).json({ message: "Group Can't be empty, delete the whole group instead" });
+    }
+    if (group.admins.includes(userId)) {
+      return res.status(404).json({ message: "Can not remove Admin" });
     }
     group.members = group.members.filter((member) => member.toString() !== userId);
     await GroupModel.findByIdAndUpdate({ _id: groupId }, { $set: { members: group.members } });
@@ -166,9 +172,7 @@ userRouter.delete("/deleteMember/:groupId/:userId", JWTAuthMiddleware, adminOnly
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
-    if (user.role === "Admin") {
-      return res.status(404).json({ message: "Can not remove Admin" });
-    }
+
     user.group = user.group.filter((group) => group.toString() !== groupId);
     await UserModel.findByIdAndUpdate({ _id: userId }, { $set: { group: user.group } });
     await user.save();
