@@ -44,7 +44,12 @@ contributionRouter.post("/:groupId/:userId", JWTAuthMiddleware, async (req, res,
       .populate({ path: "group", populate: [{ path: "members", populate: [{ path: "contributions" }] }, { path: "tasks" }] })
       .populate({ path: "contributions" });
 
-    res.status(201).json(updatedMember);
+    const loggedInUser = await UserModel.findById(req.user._id)
+      .populate("group")
+      .populate({ path: "group", populate: [{ path: "members", populate: [{ path: "contributions" }] }, { path: "tasks" }] })
+      .populate({ path: "contributions" });
+
+    res.status(201).json(loggedInUser);
   } catch (error) {
     next(error);
   }
