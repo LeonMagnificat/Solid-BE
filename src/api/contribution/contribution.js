@@ -90,7 +90,7 @@ contributionRouter.get("/:groupId/:userId", async (req, res, next) => {
   }
 });
 
-contributionRouter.put("/:contributionId", async (req, res, next) => {
+contributionRouter.put("/:contributionId", JWTAuthMiddleware, async (req, res, next) => {
   try {
     const contributionId = req.params.contributionId;
 
@@ -101,14 +101,33 @@ contributionRouter.put("/:contributionId", async (req, res, next) => {
       return;
     }
 
-    res.status(200).json(updatedContribution);
+    const userId = updatedContribution.user;
+    const groupId = updatedContribution.group;
+
+    const userContributions = await ContributionModel.find({ user: userId });
+    const userTotal = userContributions.reduce((acc, curr) => acc + curr.amount, 0);
+    const user = await UserModel.findById(userId);
+    user.total = userTotal;
+    await user.save();
+
+    const groupContributions = await ContributionModel.find({ group: groupId });
+    const groupTotal = groupContributions.reduce((acc, curr) => acc + curr.amount, 0);
+    const group = await GroupModel.findById(groupId);
+    group.total = groupTotal;
+    await group.save();
+
+    const loggedInUser = await UserModel.findById(req.user._id)
+      .populate("group")
+      .populate({ path: "group", populate: { path: "members" } });
+
+    res.send({ loggedInUser, message: "Contribution updated successfully!" });
   } catch (error) {
     next(error);
     res.status(500).send(error);
   }
 });
 
-contributionRouter.delete("/:contributionId", async (req, res, next) => {
+contributionRouter.delete("/:contributionId", JWTAuthMiddleware, async (req, res, next) => {
   try {
     const contributionId = req.params.contributionId;
 
@@ -118,7 +137,28 @@ contributionRouter.delete("/:contributionId", async (req, res, next) => {
       res.status(404).json({ message: "Contribution not found" });
       return;
     }
-    res.status(204).send({ message: "Contribution Deleted" });
+
+    const userId = deletedContribution.user;
+    const groupId = deletedContribution.group;
+
+    const userContributions = await ContributionModel.find({ user: userId });
+    const userTotal = userContributions.reduce((acc, curr) => acc + curr.amount, 0);
+    const user = await UserModel.findById(userId);
+    user.total = userTotal;
+    await user.save();
+
+    const groupContributions = await ContributionModel.find({ group: groupId });
+    const groupTotal = groupContributions.reduce((acc, curr) => acc + curr.amount, 0);
+    const group = await GroupModel.findById(groupId);
+    group.total = groupTotal;
+    await group.save();
+
+    const loggedInUser = await UserModel.findById(req.user._id)
+      .populate("group")
+      .populate({ path: "group", populate: [{ path: "members", populate: [{ path: "contributions" }] }, { path: "tasks" }] })
+      .populate({ path: "contributions" });
+
+    res.send({ loggedInUser, message: "Contribution deleted successfully!" });
   } catch (error) {
     next(error);
     res.status(500).send(error);
