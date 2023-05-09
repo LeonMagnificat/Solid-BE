@@ -22,7 +22,8 @@ groupRouter.post("/newGroup/:userId", JWTAuthMiddleware, async (req, res, next) 
 
     const user = await UserModel.findById(userId)
       .populate("group")
-      .populate({ path: "group", populate: { path: "members" } });
+      .populate({ path: "group", populate: [{ path: "members", populate: [{ path: "contributions" }] }, { path: "tasks" }] })
+      .populate({ path: "contributions" });
 
     if (!user) {
       return res.status(404).send({ message: "User not found" });
@@ -34,7 +35,8 @@ groupRouter.post("/newGroup/:userId", JWTAuthMiddleware, async (req, res, next) 
 
     const updatedUser = await UserModel.findByIdAndUpdate(userId, { $push: { group: groupId } }, { new: true, runValidators: true })
       .populate("group")
-      .populate({ path: "group", populate: { path: "members" } });
+      .populate({ path: "group", populate: [{ path: "members", populate: [{ path: "contributions" }] }, { path: "tasks" }] })
+      .populate({ path: "contributions" });
 
     res.status(200).send(updatedUser);
   } catch (error) {
@@ -110,7 +112,8 @@ groupRouter.put("/:groupId", JWTAuthMiddleware, async (req, res, next) => {
 
     const user = await UserModel.findById(userId)
       .populate("group")
-      .populate({ path: "group", populate: { path: "members" } });
+      .populate({ path: "group", populate: [{ path: "members", populate: [{ path: "contributions" }] }, { path: "tasks" }] })
+      .populate({ path: "contributions" });
     if (!user) {
       return res.status(404).send({ message: "User not found" });
     }
@@ -128,7 +131,8 @@ groupRouter.delete("/:groupId", JWTAuthMiddleware, async (req, res, next) => {
 
     const user = await UserModel.findById(userId)
       .populate("group")
-      .populate({ path: "group", populate: { path: "members" } });
+      .populate({ path: "group", populate: [{ path: "members", populate: [{ path: "contributions" }] }, { path: "tasks" }] })
+      .populate({ path: "contributions" });
     if (!user) {
       return res.status(404).send({ message: "User not found" });
     }
